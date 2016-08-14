@@ -22,7 +22,7 @@ local setmetatable = setmetatable
 local util = require('awful.util')
 
 local lsblk_cmd = "/bin/lsblk"
-local lsblk_cmd_opts = "-Pno 'KNAME,FSTYPE,MOUNTPOINT,LABEL,HOTPLUG,PKNAME,TRAN'"
+local lsblk_cmd_opts = "-Pno 'NAME,KNAME,FSTYPE,MOUNTPOINT,LABEL,HOTPLUG,PKNAME,TRAN'"
 -- }}}
 
 --- Utility functions
@@ -97,6 +97,7 @@ end
 -- {{{
 function awesome_disk:update()
    self:update_block_table()
+   self:update_menu()
 end
 -- }}}
 
@@ -114,7 +115,7 @@ end
 -- {{{
 function awesome_disk:find_block_parent(block_table, block_name)
    for __,v in ipairs(block_table) do
-      if v.name == block_name then
+      if v.kname == block_name then
          return v
       end
 
@@ -132,23 +133,20 @@ function awesome_disk:find_block_parent(block_table, block_name)
 end
 -- }}}
                                    
-
 --- awesome_disk:update_block_table()
 -- {{{
 function awesome_disk:update_block_table()
    local lsblk_lines = self:lsblk_info()
    local block_table = {}
 
-   for i,v in ipairs(lsblk_lines) do
-      local parts = split(v, ' ', true)
+   for _, line in ipairs(lsblk_lines) do
+      local parts = split(line, ' ', true)
       local block = {}
-      block.name = split(parts[1], '=')[2]
-      block.fstype = split(parts[2], '=')[2]
-      block.mountpoint = split(parts[3], '=')[2]
-      block.label = split(parts[4], '=')[2]
-      block.hotplug = split(parts[5], '=')[2]
-      block.pkname = split(parts[6], '=')[2]
-      block.tran = split(parts[7], '=')[2]
+      for _, keypair in ipairs(parts) do
+         keypair_parts = split(keypair, '=')
+         block[keypair_parts[1]:lower()] = keypair_parts[2]
+      end
+
       block.children = {}
       
       -- if pkname is "" then it is a root block node, otherwise find the parent
@@ -167,6 +165,18 @@ function awesome_disk:update_block_table()
    end
 
    self._block_table = block_table
+end
+-- }}}
+
+--- awesome_disk:update_menu()
+-- {{{
+function awesome_disk:update_menu()
+   local menu = {}
+   local function helper(block, menu)
+      
+   end
+
+   self._menu = menu
 end
 -- }}}
 

@@ -32,28 +32,32 @@ describe("find_block_parent #unit tests", function ()
   end)
 
   it("Block table doesn't have the parent", function ()
-        local block_table = { { name = "sda" } }
+        local block_table = { { kname = "sda" } }
         local retval = ad:find_block_parent(block_table, "sdb")
         assert.are.same(retval, block_table)
   end)
 
   it("Block table has root parent", function ()
-        local block_table = { { name = "sda" } }
+        local block_table = { { kname = "sda" } }
         local retval = ad:find_block_parent(block_table, "sda")
-        assert.are.same(retval, { name = "sda"})
+        assert.are.same(retval, { kname = "sda"})
   end)
 
   it("Block table has nested parent", function ()
-        local block_table = { { name = "sda",
-                                children = { { name = "sda1" } },
+        local block_table = { { kname = "sda",
+                                children = { { kname = "sda1" } },
                               }
                             }
         
         local retval = ad:find_block_parent(block_table, "sda1")
-        assert.are.same(retval, { name = "sda1" })           
+        assert.are.same(retval, { kname = "sda1" })           
   end)
   
 end)
+-- }}}
+
+--- update_block_table tests
+-- {{{
 
 describe("update_block_table #unit tests", function ()
   package.path = '/usr/share/awesome/lib/?.lua;' .. package.path
@@ -65,7 +69,7 @@ describe("update_block_table #unit tests", function ()
         end
 
         ad:update_block_table()
-        assert.are.same({ { name = 'sda',
+        assert.are.same({ { kname = 'sda',
                             fstype = '',
                             mountpoint = '',
                             label = '',
@@ -83,7 +87,7 @@ describe("update_block_table #unit tests", function ()
         end
         
         ad:update_block_table()
-        assert.are.same({ { name = "sda",
+        assert.are.same({ { kname = "sda",
                             fstype = "",
                             mountpoint = "",
                             label = "",
@@ -91,7 +95,7 @@ describe("update_block_table #unit tests", function ()
                             pkname = "",
                             tran = "sata",
                             children = { 
-                               { name = "sda1",
+                               { kname = "sda1",
                                  fstype = "ext3",
                                  mountpoint = "",
                                  label = "",
@@ -110,7 +114,7 @@ describe("update_block_table #unit tests", function ()
         end
 
         ad:update_block_table()
-        assert.are.same({ { name = "sda",
+        assert.are.same({ { kname = "sda",
                             fstype = '',
                             mountpoint = '',
                             label = '',
@@ -119,7 +123,7 @@ describe("update_block_table #unit tests", function ()
                             tran = 'sata',
                             children = {
                                {
-                                  name = 'sda1',
+                                  kname = 'sda1',
                                   fstype = 'ext3',
                                   mountpoint = '',
                                   label = '',
@@ -129,7 +133,7 @@ describe("update_block_table #unit tests", function ()
                                   children = { }
                                },
                                {
-                                  name = 'sda2',
+                                  kname = 'sda2',
                                   fstype = 'crypto_LUKS',
                                   mountpoint = '',
                                   label = '',
@@ -142,6 +146,22 @@ describe("update_block_table #unit tests", function ()
                           }
                         },
            ad._block_table)
+  end)
+end)
+-- }}}
+
+--- update tests
+-- {{{
+describe("awesome_disk:update #unit tests", function()
+
+  it("Check that update functions are called", function()
+    local ad = require('awesome-disk')()
+    stub(ad, "update_block_table")
+    stub(ad, "update_menu")
+
+    ad:update()
+    assert.stub(ad.update_block_table).was_called()
+    assert.stub(ad.update_menu).was_called()
   end)
 end)
 -- }}}
