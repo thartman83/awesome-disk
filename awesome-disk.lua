@@ -23,9 +23,10 @@ local util = require('awful.util')
 
 local lsblk_cmd = "/bin/lsblk"
 local lsblk_cmd_opts = "-Pno 'KNAME,FSTYPE,MOUNTPOINT,LABEL,HOTPLUG,PKNAME,TRAN'"
-
-local disk = { mt = {} }
 -- }}}
+
+--- Utility functions
+-- {{{
 
 --- lines(str)
 -- {{{
@@ -68,19 +69,50 @@ local function split(str, delim, noblanks)
 end
 -- }}}
 
---- lsblk_info
+-- }}}
+
+--- awesome_disk
+-- {{{
+
+--- Constructor
+-- {{{
+local awesome_disk = {}
+awesome_disk.__index = awesome_disk
+
+setmetatable(awesome_disk, {
+                __call = function(ad, ...)
+                   return ad.new(...)
+                end,
+})
+
+function awesome_disk.new()
+   local self = setmetatable({}, awesome_disk)
+   self:update()
+   return self
+end
+
+-- }}}
+
+--- awesome_disk:update()
+-- {{{
+function awesome_disk:update()
+   self:update_block_table()
+end
+-- }}}
+
+--- awesome_disk:lsblk_info
 -- Call lsblk and return the output as a array of lines
 -- {{{
-function disk:lsblk_info ()
+function awesome_disk:lsblk_info ()
    return remove_blanks(lines(string.gsub(util.pread(lsblk_cmd .. " " .. lsblk_cmd_opts), '"','')))
 end
 -- }}}
 
---- find_block_parent(block_table, block_name)
+--- awesome_disk:find_block_parent(block_table, block_name)
 -- Find `block_name' in the table where each entry in the table has a
 -- key `name'.
 -- {{{
-function disk:find_block_parent(block_table, block_name)
+function awesome_disk:find_block_parent(block_table, block_name)
    for __,v in ipairs(block_table) do
       if v.name == block_name then
          return v
@@ -101,9 +133,9 @@ end
 -- }}}
                                    
 
---- build_block_table()
+--- awesome_disk:update_block_table()
 -- {{{
-function disk:build_block_table()
+function awesome_disk:update_block_table()
    local lsblk_lines = self:lsblk_info()
    local block_table = {}
 
@@ -134,21 +166,12 @@ function disk:build_block_table()
       end
    end
 
-   return block_table
+   self._block_table = block_table
 end
 -- }}}
 
+-- }}}
 
---- Constructor
--- {{{
-function disk.new(args)
-end
-
-function disk.mt:__call(...)
-   return disk.new{...}
-end
---}}}
-
-return setmetatable(disk, disk.mt)
+return awesome_disk
 
 -- }}}

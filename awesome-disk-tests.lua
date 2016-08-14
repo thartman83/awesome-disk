@@ -23,7 +23,7 @@ require 'busted.runner'()
 describe("find_block_parent #unit tests", function ()
   -- Setup the package environment so that it can find awful
   package.path = '/usr/share/awesome/lib/?.lua;' .. package.path
-  local ad = require 'awesome-disk'
+  local ad = require 'awesome-disk'()
   
   it("Empty block table", function()
         local block_table = {}
@@ -55,16 +55,16 @@ describe("find_block_parent #unit tests", function ()
   
 end)
 
-describe("build_block_table #unit tests", function ()
+describe("update_block_table #unit tests", function ()
   package.path = '/usr/share/awesome/lib/?.lua;' .. package.path
-  local ad = require 'awesome-disk'
+  local ad = require 'awesome-disk'()
 
   it("block table 1", function ()
         ad.lsblk_info = function ()
            return {'KNAME=sda FSTYPE= MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME= TRAN=sata'}
         end
 
-        local block_table = ad:build_block_table()
+        ad:update_block_table()
         assert.are.same({ { name = 'sda',
                             fstype = '',
                             mountpoint = '',
@@ -73,7 +73,7 @@ describe("build_block_table #unit tests", function ()
                             pkname = '',
                             tran = 'sata',
                             children = {} } },
-           block_table)
+           ad._block_table)
   end)
   
   it("block table 2", function ()
@@ -82,8 +82,7 @@ describe("build_block_table #unit tests", function ()
                     'KNAME=sda1 FSTYPE=ext3 MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME=sda TRAN=' }
         end
         
-        local block_table = ad:build_block_table()
-
+        ad:update_block_table()
         assert.are.same({ { name = "sda",
                             fstype = "",
                             mountpoint = "",
@@ -100,7 +99,7 @@ describe("build_block_table #unit tests", function ()
                                  pkname = "sda",
                                  tran = "",
                                  children = {} } } } },
-           block_table)        
+           ad._block_table)        
   end)
 
   it("block table 3", function ()
@@ -110,7 +109,7 @@ describe("build_block_table #unit tests", function ()
                     'KNAME=sda2 FSTYPE=crypto_LUKS MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME=sda TRAN=' }
         end
 
-        local block_table = ad:build_block_table()
+        ad:update_block_table()
         assert.are.same({ { name = "sda",
                             fstype = '',
                             mountpoint = '',
@@ -142,7 +141,7 @@ describe("build_block_table #unit tests", function ()
                             }
                           }
                         },
-           block_table)
+           ad._block_table)
   end)
 end)
 -- }}}
