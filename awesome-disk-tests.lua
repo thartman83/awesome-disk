@@ -24,21 +24,22 @@ describe("find_block_parent #unit tests", function ()
   -- Setup the package environment so that it can find awful
   package.path = '/usr/share/awesome/lib/?.lua;' .. package.path
   local ad = require 'awesome-disk'
+  
   it("Empty block table", function()
         local block_table = {}
-        local retval = ad.find_block_parent(block_table, "foobar")
+        local retval = ad:find_block_parent(block_table, "foobar")
         assert.are.same(retval, {})
   end)
 
   it("Block table doesn't have the parent", function ()
         local block_table = { { name = "sda" } }
-        local retval = ad.find_block_parent(block_table, "sdb")
+        local retval = ad:find_block_parent(block_table, "sdb")
         assert.are.same(retval, block_table)
   end)
 
   it("Block table has root parent", function ()
         local block_table = { { name = "sda" } }
-        local retval = ad.find_block_parent(block_table, "sda")
+        local retval = ad:find_block_parent(block_table, "sda")
         assert.are.same(retval, { name = "sda"})
   end)
 
@@ -48,9 +49,10 @@ describe("find_block_parent #unit tests", function ()
                               }
                             }
         
-        local retval = ad.find_block_parent(block_table, "sda1")
+        local retval = ad:find_block_parent(block_table, "sda1")
         assert.are.same(retval, { name = "sda1" })           
   end)
+  
 end)
 
 describe("build_block_table #unit tests", function ()
@@ -58,26 +60,89 @@ describe("build_block_table #unit tests", function ()
   local ad = require 'awesome-disk'
 
   it("block table 1", function ()
-        stub(ad, "lsblk_info")
-           
-        local block_table = ad.build_block_table()
-        assert.are.same(block_table, { { name = "sda",
-                                         fstype = "",
-                                         mountpoint = "",
-                                         label = "",
-                                         hotplug = "0",
-                                         pkname = "",
-                                         tran = "sata",
-                                         children = {
-                                            { name = "sda1",
-                                              fstype = "cyrpto_LUKS",
-                                              mountpoint = "",
-                                              label = "",
-                                              hotplug = "0",
-                                              pkname = "sda",
-                                              tran = "" }
-                                         }
-        } })
+        ad.lsblk_info = function ()
+           return {'KNAME=sda FSTYPE= MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME= TRAN=sata'}
+        end
+
+        local block_table = ad:build_block_table()
+        assert.are.same({ { name = 'sda',
+                            fstype = '',
+                            mountpoint = '',
+                            label = '',
+                            hotplug = '0',
+                            pkname = '',
+                            tran = 'sata',
+                            children = {} } },
+           block_table)
+  end)
+  
+  it("block table 2", function ()
+        ad.lsblk_info = function ()
+           return { 'KNAME=sda FSTYPE= MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME= TRAN=sata',
+                    'KNAME=sda1 FSTYPE=ext3 MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME=sda TRAN=' }
+        end
+        
+        local block_table = ad:build_block_table()
+
+        assert.are.same({ { name = "sda",
+                            fstype = "",
+                            mountpoint = "",
+                            label = "",
+                            hotplug = "0",
+                            pkname = "",
+                            tran = "sata",
+                            children = { 
+                               { name = "sda1",
+                                 fstype = "ext3",
+                                 mountpoint = "",
+                                 label = "",
+                                 hotplug = "0",
+                                 pkname = "sda",
+                                 tran = "",
+                                 children = {} } } } },
+           block_table)        
+  end)
+
+  it("block table 3", function ()
+        ad.lsblk_info = function ()
+           return { 'KNAME=sda FSTYPE= MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME= TRAN=sata',
+                    'KNAME=sda1 FSTYPE=ext3 MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME=sda TRAN=',
+                    'KNAME=sda2 FSTYPE=crypto_LUKS MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME=sda TRAN=' }
+        end
+
+        local block_table = ad:build_block_table()
+        assert.are.same({ { name = "sda",
+                            fstype = '',
+                            mountpoint = '',
+                            label = '',
+                            hotplug = '0',
+                            pkname = '',
+                            tran = 'sata',
+                            children = {
+                               {
+                                  name = 'sda1',
+                                  fstype = 'ext3',
+                                  mountpoint = '',
+                                  label = '',
+                                  hotplug = '0',
+                                  pkname = 'sda',
+                                  tran = '',
+                                  children = { }
+                               },
+                               {
+                                  name = 'sda2',
+                                  fstype = 'crypto_LUKS',
+                                  mountpoint = '',
+                                  label = '',
+                                  hotplug = '0',
+                                  pkname = 'sda',
+                                  tran = '',
+                                  children = {}
+                               }                                                        
+                            }
+                          }
+                        },
+           block_table)
   end)
 end)
 -- }}}

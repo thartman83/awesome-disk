@@ -71,8 +71,8 @@ end
 --- lsblk_info
 -- Call lsblk and return the output as a array of lines
 -- {{{
-local function lsblk_info ()
-   return lines(string.gsub(util.pread(lsblk_cmd .. " " .. lsblk_cmd_opts), '"',''))
+function disk:lsblk_info ()
+   return remove_blanks(lines(string.gsub(util.pread(lsblk_cmd .. " " .. lsblk_cmd_opts), '"','')))
 end
 -- }}}
 
@@ -80,7 +80,7 @@ end
 -- Find `block_name' in the table where each entry in the table has a
 -- key `name'.
 -- {{{
-local function find_block_parent(block_table, block_name)
+function disk:find_block_parent(block_table, block_name)
    for __,v in ipairs(block_table) do
       if v.name == block_name then
          return v
@@ -88,7 +88,7 @@ local function find_block_parent(block_table, block_name)
 
       -- depth first search
       if v.children ~= nil and table.getn(v.children) > 0 then
-         local retval = find_block_parent(v.children, block_name)
+         local retval = self:find_block_parent(v.children, block_name)
          if retval ~= v.children then
             return retval
          end
@@ -103,8 +103,8 @@ end
 
 --- build_block_table()
 -- {{{
-local function build_block_table()
-   local lsblk_lines = lsblk_info()
+function disk:build_block_table()
+   local lsblk_lines = self:lsblk_info()
    local block_table = {}
 
    for i,v in ipairs(lsblk_lines) do
@@ -118,16 +118,17 @@ local function build_block_table()
       block.pkname = split(parts[6], '=')[2]
       block.tran = split(parts[7], '=')[2]
       block.children = {}
-
+      
       -- if pkname is "" then it is a root block node, otherwise find the parent
       if block.pkname == "" then
          table.insert(block_table, block)
       else
-         local parent = find_block_parent(block_table, block.pkname)
+         local parent = self:find_block_parent(block_table, block.pkname)
 
          -- this really shouldn't happen to my knowledge but we should trap for it
          assert(parent ~= nil, "Found non-root block node without parent... " ..
                    "that shouldn't happen")
+         assert(parent.children ~= nil, "Could not find block parent `" .. block.pkname .. "'")
          
          table.insert(parent.children, block)
       end
@@ -147,18 +148,6 @@ function disk.mt:__call(...)
    return disk.new{...}
 end
 --}}}
-
---- Testing hook, expose local functions to test suite
--- {{{
-if package.loaded['busted.runner'] ~= nil then
-   disk.lines = lines
-   disk.split = split   
-   disk.remove_blanks = remove_blanks
-   disk.lsblk_info = lsblk_info
-   disk.find_block_parent = find_block_parent
-   disk.build_block_table = build_block_table   
-end
--- }}}
 
 return setmetatable(disk, disk.mt)
 
