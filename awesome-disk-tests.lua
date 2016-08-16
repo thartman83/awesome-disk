@@ -18,151 +18,169 @@
 
 require 'busted.runner'()
 
---- find_block_parent_tests
+--- Awesome disk tests
+describe("awesome-disk tests", function ()
 -- {{{
-describe("find_block_parent #unit tests", function ()
-  -- Setup the package environment so that it can find awful
-  package.path = '/usr/share/awesome/lib/?.lua;' .. package.path
-  local ad = require 'awesome-disk'()
+  package.path = 'mocks/?.lua;' .. package.path
+
+  --- find_block_parent_tests
+  describe("find_block_parent #unit tests", function ()
+  -- {{{
+    -- Setup the package environment so that it can find awful
+    local awesome_disk
+    local ad
+    
+    setup(function ()          
+          awesome_disk = require('awesome-disk')
+
+          stub(awesome_disk, "update")
+          ad = awesome_disk()
+    end)
+
+    teardown(function ()
+          awesome_disk.update:clear()
+          awesome_disk.update:revert()
+    end)
   
-  it("Empty block table", function()
-        local block_table = {}
-        local retval = ad:find_block_parent(block_table, "foobar")
-        assert.are.same(retval, {})
-  end)
+    it("Empty block table", function()
+          local block_table = {}
+          local retval = ad:find_block_parent(block_table, "foobar")
+          assert.are.same(retval, {})
+    end)
 
-  it("Block table doesn't have the parent", function ()
-        local block_table = { { kname = "sda" } }
-        local retval = ad:find_block_parent(block_table, "sdb")
-        assert.are.same(retval, block_table)
-  end)
+    it("Block table doesn't have the parent", function ()
+          local block_table = { { kname = "sda" } }
+          local retval = ad:find_block_parent(block_table, "sdb")
+          assert.are.same(retval, block_table)
+    end)
+    
+    it("Block table has root parent", function ()
+          local block_table = { { kname = "sda" } }
+          local retval = ad:find_block_parent(block_table, "sda")
+          assert.are.same(retval, { kname = "sda"})
+    end)
 
-  it("Block table has root parent", function ()
-        local block_table = { { kname = "sda" } }
-        local retval = ad:find_block_parent(block_table, "sda")
-        assert.are.same(retval, { kname = "sda"})
-  end)
+    it("Block table has nested parent", function ()
+          local block_table = { { kname = "sda",
+                                  children = { { kname = "sda1" } },
+                                }
+          }
+          
+          local retval = ad:find_block_parent(block_table, "sda1")
+          assert.are.same(retval, { kname = "sda1" })           
+    end)
 
-  it("Block table has nested parent", function ()
-        local block_table = { { kname = "sda",
-                                children = { { kname = "sda1" } },
+
+  end)
+  -- }}}
+
+  --- update_block_table tests
+  describe("update_block_table #unit tests", function ()
+  -- {{{
+    package.path = '/usr/share/awesome/lib/?.lua;' .. package.path
+    _G.lsblk_info = ""         
+    local ad = require 'awesome-disk'()
+    
+    it("block table 1", function ()
+          _G.lsblk_info = 'KNAME="sda" FSTYPE="" MOUNTPOINT="" LABEL="" HOTPLUG="0" PKNAME="" TRAN="sata"'
+          
+          ad:update_block_table()
+          assert.are.same({ { kname = 'sda',
+                              fstype = '',
+                              mountpoint = '',
+                              label = '',
+                              hotplug = '0',
+                              pkname = '',
+                              tran = 'sata',
+                              children = {} } },
+             ad._block_table)
+    end)
+  
+    it("block table 2", function ()
+          ad.lsblk_info = function ()
+             return { 'KNAME=sda FSTYPE= MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME= TRAN=sata',
+                      'KNAME=sda1 FSTYPE=ext3 MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME=sda TRAN=' }
+          end
+          
+          ad:update_block_table()
+          assert.are.same({ { kname = "sda",
+                              fstype = "",
+                              mountpoint = "",
+                              label = "",
+                              hotplug = "0",
+                              pkname = "",
+                              tran = "sata",
+                              children = { 
+                                 { kname = "sda1",
+                                   fstype = "ext3",
+                                   mountpoint = "",
+                                   label = "",
+                                   hotplug = "0",
+                                   pkname = "sda",
+                                   tran = "",
+                                   children = {} } } } },
+             ad._block_table)        
+    end)
+    
+    it("block table 3", function ()
+          ad.lsblk_info = function ()
+             return { 'KNAME=sda FSTYPE= MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME= TRAN=sata',
+                      'KNAME=sda1 FSTYPE=ext3 MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME=sda TRAN=',
+                      'KNAME=sda2 FSTYPE=crypto_LUKS MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME=sda TRAN=' }
+          end
+          
+          ad:update_block_table()
+          assert.are.same({ { kname = "sda",
+                              fstype = '',
+                              mountpoint = '',
+                              label = '',
+                              hotplug = '0',
+                              pkname = '',
+                              tran = 'sata',
+                              children = {
+                                 {
+                                    kname = 'sda1',
+                                    fstype = 'ext3',
+                                    mountpoint = '',
+                                    label = '',
+                                    hotplug = '0',
+                                    pkname = 'sda',
+                                    tran = '',
+                                    children = { }
+                                 },
+                                 {
+                                    kname = 'sda2',
+                                    fstype = 'crypto_LUKS',
+                                    mountpoint = '',
+                                    label = '',
+                                    hotplug = '0',
+                                    pkname = 'sda',
+                                    tran = '',
+                                    children = {}
+                                 }                                                        
                               }
                             }
-        
-        local retval = ad:find_block_parent(block_table, "sda1")
-        assert.are.same(retval, { kname = "sda1" })           
+                          },
+             ad._block_table)
+    end)
   end)
-  
-end)
--- }}}
+  -- }}}
 
---- update_block_table tests
--- {{{
-
-describe("update_block_table #unit tests", function ()
-  package.path = '/usr/share/awesome/lib/?.lua;' .. package.path
-  local ad = require 'awesome-disk'()
-
-  it("block table 1", function ()
-        ad.lsblk_info = function ()
-           return {'KNAME=sda FSTYPE= MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME= TRAN=sata'}
-        end
-
-        ad:update_block_table()
-        assert.are.same({ { kname = 'sda',
-                            fstype = '',
-                            mountpoint = '',
-                            label = '',
-                            hotplug = '0',
-                            pkname = '',
-                            tran = 'sata',
-                            children = {} } },
-           ad._block_table)
+  --- update tests
+  describe("awesome_disk:update #unit tests", function()
+  -- {{{
+    it("Check that update functions are called", function()
+          local ad = require('awesome-disk')()
+          stub(ad, "update_block_table")
+          stub(ad, "update_menu")
+          
+          ad:update()
+          assert.stub(ad.update_block_table).was_called()
+          assert.stub(ad.update_menu).was_called()
+    end)
   end)
-  
-  it("block table 2", function ()
-        ad.lsblk_info = function ()
-           return { 'KNAME=sda FSTYPE= MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME= TRAN=sata',
-                    'KNAME=sda1 FSTYPE=ext3 MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME=sda TRAN=' }
-        end
-        
-        ad:update_block_table()
-        assert.are.same({ { kname = "sda",
-                            fstype = "",
-                            mountpoint = "",
-                            label = "",
-                            hotplug = "0",
-                            pkname = "",
-                            tran = "sata",
-                            children = { 
-                               { kname = "sda1",
-                                 fstype = "ext3",
-                                 mountpoint = "",
-                                 label = "",
-                                 hotplug = "0",
-                                 pkname = "sda",
-                                 tran = "",
-                                 children = {} } } } },
-           ad._block_table)        
-  end)
+  -- }}}
 
-  it("block table 3", function ()
-        ad.lsblk_info = function ()
-           return { 'KNAME=sda FSTYPE= MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME= TRAN=sata',
-                    'KNAME=sda1 FSTYPE=ext3 MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME=sda TRAN=',
-                    'KNAME=sda2 FSTYPE=crypto_LUKS MOUNTPOINT= LABEL= HOTPLUG=0 PKNAME=sda TRAN=' }
-        end
-
-        ad:update_block_table()
-        assert.are.same({ { kname = "sda",
-                            fstype = '',
-                            mountpoint = '',
-                            label = '',
-                            hotplug = '0',
-                            pkname = '',
-                            tran = 'sata',
-                            children = {
-                               {
-                                  kname = 'sda1',
-                                  fstype = 'ext3',
-                                  mountpoint = '',
-                                  label = '',
-                                  hotplug = '0',
-                                  pkname = 'sda',
-                                  tran = '',
-                                  children = { }
-                               },
-                               {
-                                  kname = 'sda2',
-                                  fstype = 'crypto_LUKS',
-                                  mountpoint = '',
-                                  label = '',
-                                  hotplug = '0',
-                                  pkname = 'sda',
-                                  tran = '',
-                                  children = {}
-                               }                                                        
-                            }
-                          }
-                        },
-           ad._block_table)
-  end)
-end)
--- }}}
-
---- update tests
--- {{{
-describe("awesome_disk:update #unit tests", function()
-
-  it("Check that update functions are called", function()
-    local ad = require('awesome-disk')()
-    stub(ad, "update_block_table")
-    stub(ad, "update_menu")
-
-    ad:update()
-    assert.stub(ad.update_block_table).was_called()
-    assert.stub(ad.update_menu).was_called()
-  end)
 end)
 -- }}}
 

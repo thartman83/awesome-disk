@@ -19,7 +19,10 @@
 --- locals and requires
 -- {{{
 local setmetatable = setmetatable
-local util = require('awful.util')
+local awful = {}
+
+awful.util = require('awful.util')
+awful.menu = require('awful.menu')
 
 local lsblk_cmd = "/bin/lsblk"
 local lsblk_cmd_opts = "-Pno 'NAME,KNAME,FSTYPE,MOUNTPOINT,LABEL,HOTPLUG,PKNAME,TRAN'"
@@ -71,10 +74,10 @@ end
 
 -- }}}
 
---- awesome_disk
+--- awesome_disk class
 -- {{{
 
---- Constructor
+--- Class Definition and Constructor
 -- {{{
 local awesome_disk = {}
 awesome_disk.__index = awesome_disk
@@ -94,8 +97,8 @@ end
 -- }}}
 
 --- awesome_disk:update()
--- {{{
 function awesome_disk:update()
+-- {{{
    self:update_block_table()
    self:update_menu()
 end
@@ -103,17 +106,17 @@ end
 
 --- awesome_disk:lsblk_info
 -- Call lsblk and return the output as a array of lines
--- {{{
 function awesome_disk:lsblk_info ()
-   return remove_blanks(lines(string.gsub(util.pread(lsblk_cmd .. " " .. lsblk_cmd_opts), '"','')))
+-- {{{
+   return remove_blanks(lines(string.gsub(awful.util.pread(lsblk_cmd .. " " .. lsblk_cmd_opts), '"','')))
 end
 -- }}}
 
 --- awesome_disk:find_block_parent(block_table, block_name)
 -- Find `block_name' in the table where each entry in the table has a
 -- key `name'.
--- {{{
 function awesome_disk:find_block_parent(block_table, block_name)
+-- {{{
    for __,v in ipairs(block_table) do
       if v.kname == block_name then
          return v
@@ -134,8 +137,8 @@ end
 -- }}}
                                    
 --- awesome_disk:update_block_table()
--- {{{
 function awesome_disk:update_block_table()
+-- {{{
    local lsblk_lines = self:lsblk_info()
    local block_table = {}
 
@@ -169,8 +172,8 @@ end
 -- }}}
 
 --- awesome_disk:update_menu()
--- {{{
 function awesome_disk:update_menu()
+-- {{{
    local menu = {}
    local function helper(block, menu)
       
