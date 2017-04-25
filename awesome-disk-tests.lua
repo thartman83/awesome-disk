@@ -158,4 +158,77 @@ describe("update_block_table #unit tests", function () -- {{{
 end)
 -- }}}
 
+--- update_menu
+describe("update_menu #unit tests", function () -- {{{
+  package.path = '/usr/share/awesome/lib/?.lua;' .. package.path
+  local ad = require 'awesome-disk'
+
+  it("block table 1", function ()
+        ad._block_table = { { kname = 'sda',
+                              fstype = '',
+                              mountpoint = '',
+                              label = '',
+                              hotplug = '0',
+                              pkname = '',
+                              tran = 'sata',
+                              children = {} } }
+        ad.update_menu()
+        assert.are.same({},ad._menu)
+  end)
+
+  it("block table 2", function ()
+        ad.block_table = { { kname = "sda",
+                              fstype = "",
+                              mountpoint = "",
+                              label = "",
+                              hotplug = "0",
+                              pkname = "",
+                              tran = "sata",
+                              children = { 
+                                 { kname = "sda1",
+                                   fstype = "ext3",
+                                   mountpoint = "",
+                                   label = "",
+                                   hotplug = "0",
+                                   pkname = "sda",
+                                   tran = "",
+                                   children = {} } } } }
+        ad.update_menu()
+        assert.are.same({},ad._menu)
+  end)
+
+  it("block table 3", function ()
+        ad._block_table = { { kname = "sda",
+                              fstype = '',
+                              mountpoint = '',
+                              label = '',
+                              hotplug = '0',
+                              pkname = '',
+                              tran = 'sata',
+                              children = {
+                                 {
+                                    kname = 'sda1',
+                                    fstype = 'ext3',
+                                    mountpoint = '',
+                                    label = '',
+                                    hotplug = '0',
+                                    pkname = 'sda',
+                                    tran = '',
+                                    children = { }
+                                 },
+                                 {
+                                    kname = 'sda2',
+                                    fstype = 'crypto_LUKS',
+                                    mountpoint = '',
+                                    label = '',
+                                    hotplug = '0',
+                                    pkname = 'sda',
+                                    tran = '',
+                                    children = {} } } } }
+        ad.update_menu()
+        assert.are.same({},ad._menu)
+  end)
+end)
+-- }}}
+
 -- }}}
