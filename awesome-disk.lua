@@ -19,10 +19,11 @@
 --- locals and requires
 -- {{{
 local setmetatable = setmetatable
-local awful      = require('awful'  )
-local radical    = require('radical')
-local wibox      = require('wibox'  )
-local vicious    = require('vicious')
+local awful      = require('awful    ')
+local radical    = require('radical  ')
+local wibox      = require('wibox    ')
+local vicious    = require('vicious  ')
+local beautiful  = require('beautiful')
 
 local lsblk_cmd = "/bin/lsblk"
 local lsblk_cmd_opts = "-Pno 'NAME,KNAME,FSTYPE,MOUNTPOINT,LABEL,HOTPLUG,PKNAME,TRAN'"
@@ -104,11 +105,10 @@ function awesome_disk:update()
 end
 -- }}}
 
---- awesome_disk:find_block_parent(block_table, block_name)
+--- awesome_disk:find_block_parent(block_table, block_name) -- {{{
 -- Find `block_name' in the table where each entry in the table has a
 -- key `name'.
 function awesome_disk:find_block_parent(block_table, block_name)
--- {{{
    for __,v in ipairs(block_table) do
       if v.kname == block_name then
          return v
@@ -128,7 +128,7 @@ function awesome_disk:find_block_parent(block_table, block_name)
 end
 -- }}}
                                    
---- awesome_disk:update_block_table() -- {{{
+--- awesome_disk:update_block_table(stdout, stderr, exitreason, exitcode) -- {{{
 -- 
 function awesome_disk:update_block_table(stdout, stderr, exitreason, exitcode)
    local lsblk_lines = remove_blanks(lines(string.gsub(stdout,'"','')))
@@ -165,7 +165,7 @@ function awesome_disk:update_block_table(stdout, stderr, exitreason, exitcode)
 end
 -- }}}
 
---- awesome_disk:update_menu -- {{{
+--- awesome_disk:update_menu() -- {{{
 -- 
 function awesome_disk:update_menu ()
    self._menu = radical.context {
@@ -174,6 +174,8 @@ function awesome_disk:update_menu ()
       layout      = radical.layout.vertical,
       item_height = 15
    }
+
+   self._menu:add_widget(radical.widgets.header(self._menu,"BLOCKS"))
 
    for _,node in ipairs(self._block_table) do
       self:process_node(node,0)
