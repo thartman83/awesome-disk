@@ -19,10 +19,10 @@
 --- locals and requires
 -- {{{
 local setmetatable = setmetatable
-local awful      = require('awful    ')
-local radical    = require('radical  ')
-local wibox      = require('wibox    ')
-local vicious    = require('vicious  ')
+local awful      = require('awful'    )
+local radical    = require('radical'  )
+local wibox      = require('wibox'    )
+local vicious    = require('vicious'  )
 local beautiful  = require('beautiful')
 
 local lsblk_cmd = "/bin/lsblk"
