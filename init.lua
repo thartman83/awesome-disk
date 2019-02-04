@@ -77,10 +77,9 @@ end
 -- 
 function ad:update ()
    awful.spawn.easy_async(self._lsblk_cmd,
-      function(stdout, stderr, exitreason, exitcode)
-         self:parseLsBlk(stdout, stderr, exitreason, exitcode)
+                          function(stdout, stderr, exitreason, exitcode)
+                             self:parseLsBlk(stdout, stderr, exitreason, exitcode)
    end)
-   return true
 end
 -- }}}
 
@@ -150,24 +149,97 @@ end
 --- ad:updateBlockTable -- {{{
 -- 
 function ad:updateBlockTable (bt)  
-   self._block_table = bt
-
-   self:updateDisplayBlock()  
+   self._blockTable = bt
+   
+   self:updateDisplayBlock()
+   self:updateBlockMenu()
 end
 -- }}}
 
 --- ad:updateDisplayBlock -- {{{
 -- 
-function ad:updateDisplayBlock ()   
-   print(serpent.block(self._displayBlock))
+function ad:updateDisplayBlock ()
 
    if self._displayBlock ~= nil then
+      if self._displayBlock.fsused == nil or self._displayBlock.fssize == nil then
+         return
+      end         
+      
       local perc = tonumber(self._displayBlock.fsused) /
          tonumber(self._displayBlock.fssize)
       self.children[1]:set_value(perc)
       self.children[2].text = self._displayBlock.mountpoint ..
          " (" .. math.floor(perc * 100) .. "%" .. ")"
    end
+end
+-- }}}
+
+--- ad:updateBlockMenu -- {{{
+----------------------------------------------------------------------
+-- 
+----------------------------------------------------------------------
+function ad:updateBlockMenu ()      
+   local function helper(m, tbl, level)
+      for i,v in ipairs(tbl) do
+         local lbl = ""
+         local spacer = makeSpace(level)
+         if level > 1 then
+            if i == table.getn(tbl) then
+               lbl = "└" .. spacer
+            else
+               lbl = "├" .. spacer
+            end
+         end
+
+         lbl = lbl .. v.name            
+         table.insert(m, {lbl})
+         
+         if v.children ~= nil and table.getn(v.children) > 0 then
+            helper(m, v.children, level + 1)
+         end
+      end
+      return retval
+   end
+   
+   local m = {}
+   helper(m, self._blockTable, 0)
+   self._menu = awful.menu({ items = m })
+end
+-- }}}
+
+--- ad:makeSpace -- {{{
+----------------------------------------------------------------------
+-- 
+----------------------------------------------------------------------
+function makeSpace (level)
+   local retval = ""
+   if level == 0 then
+      return retval
+   end
+
+   print("Current level is: " .. level)
+   for x=1,level do
+      retval = retval .. "─"
+   end
+   
+   return retval
+end
+-- }}}
+
+--- ad:toggle_menu -- {{{
+----------------------------------------------------------------------
+-- toggle the disk menu
+----------------------------------------------------------------------
+function ad:toggle_menu ()
+   if self._menu == nil then return end
+   
+   if self._menu.visible then
+      self._menu:hide()
+   else
+      self._menu:show()
+   end
+
+   self._menu.visible = not self._menu.visible
 end
 -- }}}
 
@@ -183,23 +255,24 @@ function new (args)
       layout = wibox.layout.stack
    }
    
-   gtable.crush(obj, ad, true)
+   gtable.crush(obj, ad, true)   
 
    obj._timeout        = args.timeout or 15
    obj._lsblk_cmd      = [[/bin/lsblk -Pbno 'NAME,KNAME,FSTYPE,MOUNTPOINT,LABEL,HOTPLUG,PKNAME,TRAN,FSSIZE,FSUSED']]
-   obj._block_table    = {}
-   obj._displayName    = args.displayDisk or "vg1-home"
+   obj._blockTable     = {}
+   obj._displayName    = args.displayDisk
    obj._displayBlock   = {}
-   
-   -- Start the widget
-   -- gears.timer {
-   --    timeout   = obj._timeout,
-   --    autostart = true,
-   --    callback  = obj.update
-   -- }
+   obj._menu           = nil
 
-   obj:update()
-   gears.timer.start_new(obj._timeout, function () obj:update() return false end)
+   obj._timer = gears.timer {
+      timeout   = obj._timeout,
+      autostart = true,
+      call_now  = true,
+      callback  = function () obj:update() end
+   }
+
+   obj:buttons(gtable.join(awful.button({},1,
+                              function () obj:toggle_menu() end)))
 
    return obj
 end
