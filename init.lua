@@ -183,15 +183,15 @@ function ad:updateBlockMenu ()
       for i,v in ipairs(tbl) do
          local lbl = ""
          local spacer = makeSpace(level)
-         if level > 1 then
+         if level > 0 then
             if i == table.getn(tbl) then
                lbl = "└" .. spacer
             else
                lbl = "├" .. spacer
             end
          end
-
-         lbl = lbl .. v.name            
+         
+         lbl = lbl .. v.name
          table.insert(m, {lbl})
          
          if v.children ~= nil and table.getn(v.children) > 0 then
@@ -217,7 +217,6 @@ function makeSpace (level)
       return retval
    end
 
-   print("Current level is: " .. level)
    for x=1,level do
       retval = retval .. "─"
    end
