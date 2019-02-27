@@ -22,12 +22,13 @@
 local ad = {}
 
 --- Libraries -- {{{
-local gtable  = require("gears.table"  )
-local gstring = require("gears.string" )
-local wibox   = require("wibox"        )
-local awful   = require("awful"        )
-local serpent = require("serpent"      )
-local gears   = require("gears"        )
+local gtable    = require("gears.table"  )
+local gstring   = require("gears.string" )
+local wibox     = require("wibox"        )
+local awful     = require("awful"        )
+local serpent   = require("serpent"      )
+local gears     = require("gears"        )
+local beautiful = require("beautiful"    )
 -- }}}
 
 --- Helper Functions -- {{{
@@ -167,9 +168,9 @@ function ad:updateDisplayBlock ()
       
       local perc = tonumber(self._displayBlock.fsused) /
          tonumber(self._displayBlock.fssize)
-      self.children[1]:set_value(perc)
-      self.children[2].text = self._displayBlock.mountpoint ..
-         " (" .. math.floor(perc * 100) .. "%" .. ")"
+      self.children[1].text = self._displayBlock.mountpoint .. " "
+      self.children[2].children[1]:set_value(perc)
+      self.children[2].children[2].text = math.floor(perc * 100)
    end
 end
 -- }}}
@@ -178,7 +179,12 @@ end
 ----------------------------------------------------------------------
 -- 
 ----------------------------------------------------------------------
-function ad:updateBlockMenu ()      
+function ad:updateBlockMenu ()
+   local function genBlockEntry(parent, args)
+      local layout = wibox.layout.align.horizontal()      
+      return { widget = layout }
+   end
+   
    local function helper(m, tbl, level)
       for i,v in ipairs(tbl) do
          local lbl = ""
@@ -192,7 +198,7 @@ function ad:updateBlockMenu ()
          end
          
          lbl = lbl .. v.name
-         table.insert(m, {lbl})
+         table.insert(m, {new = genBlockEntry})
          
          if v.children ~= nil and table.getn(v.children) > 0 then
             helper(m, v.children, level + 1)
@@ -248,10 +254,16 @@ function new (args)
    local args = args or {}
    
    local obj = wibox.widget {
-      { max_value = 1, forced_width = 100, forced_height = 10,
-        widget = wibox.container.radialprogressbar },
-      { text = "", align = "center", widget = wibox.widget.textbox },
-      layout = wibox.layout.stack
+      { text = "", widget = wibox.widget.textbox },
+      {
+         { max_value = 1, -- forced_width = 100, forced_height = 8,
+           start_angle = math.pi / 2,
+           thickness = 1.5,
+           widget = wibox.container.arcchart },
+         { text = "", align = "center", widget = wibox.widget.textbox },
+         layout = wibox.layout.stack
+      },
+      layout = wibox.layout.align.horizontal
    }
    
    gtable.crush(obj, ad, true)   
