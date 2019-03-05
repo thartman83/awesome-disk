@@ -37,7 +37,24 @@ describe("awesome-pass unit tests",
      describe("ad:parseLsBlk tests",
        function ()
           local d = awesomeDisk()
-          
+          -- updateBlockTable is called as a side effect of parseLsBlk
+          -- completing so noop the function while testing
+          d["updateBlockTable"] = function (self, bt) self._blockTable = bt end
+
+          --- A good test -- {{{
+          it("should parse well formed output from lsblk successfully",
+             function()
+                local lsblkOutput = [[NAME="sda" KNAME="sda" FSTYPE="" MOUNTPOINT="" LABEL="" HOTPLUG="0" PKNAME="" TRAN="sata" FSSIZE="" FSUSED=""
+NAME="sda1" KNAME="sda1" FSTYPE="" MOUNTPOINT="" LABEL="" HOTPLUG="0" PKNAME="sda" TRAN="" FSSIZE="" FSUSED=""
+NAME="sda2" KNAME="sda2" FSTYPE="ext2" MOUNTPOINT="" LABEL="" HOTPLUG="0" PKNAME="sda" TRAN="" FSSIZE="" FSUSED=""
+NAME="sda3" KNAME="sda3" FSTYPE="swap" MOUNTPOINT="[SWAP]" LABEL="" HOTPLUG="0" PKNAME="sda" TRAN="" FSSIZE="" FSUSED=""
+NAME="sda4" KNAME="sda4" FSTYPE="ext4" MOUNTPOINT="/" LABEL="" HOTPLUG="0" PKNAME="sda" TRAN="" FSSIZE="48347668480" FSUSED="37202923520"
+NAME="sr0" KNAME="sr0" FSTYPE="" MOUNTPOINT="" LABEL="" HOTPLUG="1" PKNAME="" TRAN="ata" FSSIZE="" FSUSED=""]]
+                d:parseLsBlk(lsblkOutput,"",0,0)
+                assert.is_equal(2,table.getn(d._blockTable))
+                assert.is_equal(4,table.getn(d._blockTable[1].children))
+          end)
+          -- }}}
      end)
      -- }}}
 end)
