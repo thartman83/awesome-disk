@@ -1,5 +1,5 @@
 -------------------------------------------------------------------------------
--- unit_spec.lua for awesome-disk                                            --
+-- timer.lua for awesome-disk                                                --
 -- Copyright (c) 2019 Tom Hartman (thomas.lees.hartman@gmail.com)            --
 --                                                                           --
 -- This program is free software; you can redistribute it and/or             --
@@ -15,33 +15,11 @@
 -------------------------------------------------------------------------------
 
 --- Commentary -- {{{
--- Unit tests for awesome-disk
+-- gears.timer mocks for awesome-disk
 -- }}}
 
---- awesome-disk unit tests -- {{{
-
---- libraries and mocks -- {{{
-package.path = "./tests/mocks/?.lua;./tests/mocks/?/init.lua;../?/init.lua;" ..
-               package.path
-
-local awesomeDisk  = require("awesome-disk")
-local awful = require("awful")
-local dbg   = require("debugger")
--- }}}
-
---- awesome-pass unit tests -- {{{
-describe("awesome-pass unit tests",
-  function ()     
-
-     --- ad:parseLsBlk Tests -- {{{
-     describe("ad:parseLsBlk tests",
-       function ()
-          local d = awesomeDisk()
-          
-     end)
-     -- }}}
-end)
--- }}}
-
-
+--- timer -- {{{
+local ret = {}
+setmetatable(ret, {__call = function (...) return {} end })
+return ret             
 -- }}}

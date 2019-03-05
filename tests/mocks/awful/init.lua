@@ -19,7 +19,8 @@
 -- }}}
 
 --- awful -- {{{
-local m = require("awful.menu")
-local u = require("awful.util")
-return { menu = m, util = u }
+local m = require("awful.menu"  )
+local u = require("awful.util"  )
+local b = require("awful.button")
+return { menu = m, util = u, button = b }
 -- }}}

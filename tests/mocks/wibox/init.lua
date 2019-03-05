@@ -19,5 +19,13 @@
 -- }}}
 
 --- wibox -- {{{
-return {}
+local ret =  { widget    = { textbox = {  } },
+               container = { arcchart = {} },
+               layout    = { stack   = {},
+                             align   = { horizontal = {} } } }
+
+setmetatable(ret.widget, { __call = function (...)
+                              return { buttons = function (...) end } end })
+             
+return ret
 -- }}}

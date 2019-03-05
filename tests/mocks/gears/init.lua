@@ -19,8 +19,9 @@
 -- }}}
 
 --- gears -- {{{
-local t = require("gears.table")
-local s = require("gears.string")
+local t  = require("gears.table")
+local s  = require("gears.string")
+local t2 = require("gears.timer")
 
-return { table = t, string = s }
+return { table = t, string = s, timer = t2 }
 -- }}}

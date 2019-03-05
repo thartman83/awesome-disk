@@ -29,6 +29,7 @@ local awful     = require("awful"        )
 local serpent   = require("serpent"      )
 local gears     = require("gears"        )
 local beautiful = require("beautiful"    )
+local dbg       = require("debugger"     )
 -- }}}
 
 --- Helper Functions -- {{{
