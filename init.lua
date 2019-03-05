@@ -180,26 +180,37 @@ end
 -- 
 ----------------------------------------------------------------------
 function ad:updateBlockMenu ()
-   local function genBlockEntry(parent, args)
-      local layout = wibox.layout.align.horizontal()      
-      return { widget = layout }
+   local function genBlockEntry(parent, args)            
+      local w = wibox.widget {
+         {
+            max_value = 100,
+            value = args.pct,
+            widget = wibox.widget.progressbar,
+         },
+         {
+            text = args.name,
+            widget = wibox.widget.textbox,
+         },         
+         
+         layout = wibox.layout.stack
+      }
+
+      return { widget = w,
+               cmd = {},
+               akey = args.name .. "_menu_entry"
+      }
    end
    
    local function helper(m, tbl, level)
-      for i,v in ipairs(tbl) do
-         local lbl = ""
-         local spacer = makeSpace(level)
-         if level > 0 then
-            if i == table.getn(tbl) then
-               lbl = "└" .. spacer
-            else
-               lbl = "├" .. spacer
-            end
-         end
-         
-         lbl = lbl .. v.name
-         table.insert(m, {new = genBlockEntry})
-         
+      for i,v in ipairs(tbl) do         
+         table.insert(m, { new = function(parent, args)
+                                    args.name = v.name
+                                    if tonumber(v.fsused) ~= nil and tonumber(v.fssize) ~= nil then
+                                       args.pct = tonumber(v.fsused) / tonumber(v.fssize) * 100
+                                    end
+                                    return genBlockEntry(parent,args)
+                                 end})
+            
          if v.children ~= nil and table.getn(v.children) > 0 then
             helper(m, v.children, level + 1)
          end
