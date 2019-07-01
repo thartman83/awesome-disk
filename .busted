@@ -1,0 +1,13 @@
+return {
+   _all = {
+      coverage = true
+   },
+   default = {
+      verbose = true
+   },
+   unit = {
+      tags = "unit",
+      ROOT = {"spec/unit"},
+      verbose = true
+   }
+}

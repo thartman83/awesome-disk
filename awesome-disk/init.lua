@@ -29,6 +29,7 @@ local awful     = require("awful"        )
 local serpent   = require("serpent"      )
 local gears     = require("gears"        )
 local beautiful = require("beautiful"    )
+local dbg       = require("debugger"     )
 -- }}}
 
 --- Helper Functions -- {{{
@@ -89,6 +90,8 @@ end
 -- The format should be lines of kv pairs
 function ad:parseLsBlk (stdout, stderr, exitreason, exitcode)
    local bt = {}
+   local displayName = type(self._displayName) == "function" and self:_displayName() or
+      self._displayName
    
    local lines = remove_blanks(lines(stdout))
    for _,line in ipairs(lines) do
@@ -115,7 +118,8 @@ function ad:parseLsBlk (stdout, stderr, exitreason, exitcode)
          
          table.insert(parent.children, block)
 
-         if block.name == self._displayName then
+         print("Checking " .. block.name .. " = " .. displayName)
+         if block.name == displayName then
             self._displayBlock = block
          end
       end
@@ -134,7 +138,7 @@ function ad:findBlockParent (block_table, block_name)
       end
 
       -- depth first search
-      if v.children ~= nil and table.getn(v.children) > 0 then
+      if v.children ~= nil and #v.children > 0 then
          local retval = self:findBlockParent(v.children, block_name)
          if retval ~= v.children then
             return retval
@@ -160,8 +164,9 @@ end
 --- ad:updateDisplayBlock -- {{{
 -- 
 function ad:updateDisplayBlock ()
-
    if self._displayBlock ~= nil then
+      print(serpent.block(self._displayBlock))
+      
       if self._displayBlock.fsused == nil or self._displayBlock.fssize == nil then
          return
       end         
@@ -210,8 +215,8 @@ function ad:updateBlockMenu ()
                                     end
                                     return genBlockEntry(parent,args)
                                  end})
-            
-         if v.children ~= nil and table.getn(v.children) > 0 then
+         
+         if v.children ~= nil and #v.children > 0 then
             helper(m, v.children, level + 1)
          end
       end
@@ -259,6 +264,23 @@ function ad:toggle_menu ()
 end
 -- }}}
 
+--- ad:findHomePartition -- {{{
+-- Returns the name of the block node that has the home directory mounted on it
+-- param: tbl the 
+function ad:findHomePartition (tbl)
+   local tbl = tbl or self._blockTable
+   if tbl == nil then return end
+   
+   for i,v in ipairs(tbl) do
+      if v.mountpoint == "/home" then
+         return v.name
+      elseif #v.children ~= 0 then
+         ad:findHomePartition(v.children)
+      end
+   end   
+end
+-- }}}
+
 --- new -- {{{
 -- Awesome Disk constructor
 function new (args)
@@ -276,13 +298,13 @@ function new (args)
       },
       layout = wibox.layout.align.horizontal
    }
-   
-   gtable.crush(obj, ad, true)   
+
+   gtable.crush(obj, ad, true)
 
    obj._timeout        = args.timeout or 15
    obj._lsblk_cmd      = [[/bin/lsblk -Pbno 'NAME,KNAME,FSTYPE,MOUNTPOINT,LABEL,HOTPLUG,PKNAME,TRAN,FSSIZE,FSUSED']]
    obj._blockTable     = {}
-   obj._displayName    = args.displayDisk
+   obj._displayName    = args.displayDisk or obj.findHomePartition
    obj._displayBlock   = {}
    obj._menu           = nil
 
